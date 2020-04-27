@@ -8,16 +8,15 @@ import {
 export default (shouldTrack, callback) => {
   const [err, setErr] = useState(null);
 
-  //We put helper functions that use state objects in use Effect
-  //If we call something from the state we should add it to the dependencies
-  //in the end array of useEffect
   useEffect(() => {
     let subscriber;
-
-    //Helper function for permissions
     const startWatching = async () => {
       try {
-        await requestPermissionsAsync();
+        const { granted } = await requestPermissionsAsync();
+        if (!granted) {
+          throw new Error("Location permission not granted");
+        }
+
         subscriber = await watchPositionAsync(
           {
             accuracy: Accuracy.BestForNavigation,
@@ -34,11 +33,12 @@ export default (shouldTrack, callback) => {
     if (shouldTrack) {
       startWatching();
     } else {
-      if (subsriber) {
+      if (subscriber) {
         subscriber.remove();
       }
       subscriber = null;
     }
+
     return () => {
       if (subscriber) {
         subscriber.remove();
@@ -46,6 +46,5 @@ export default (shouldTrack, callback) => {
     };
   }, [shouldTrack, callback]);
 
-  //convention of hooks is to return an array
   return [err];
 };
